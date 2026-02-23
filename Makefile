@@ -8,7 +8,7 @@ VENV_PYTEST := $(VENV)/bin/pytest
 VENV_RUFF := $(VENV)/bin/ruff
 VENV_BLACK := $(VENV)/bin/black
 
-.PHONY: install dev-api dev-ui seed test lint format init-db migrate
+.PHONY: install dev-api dev-ui seed test lint format init-db migrate stress
 
 install:
 	$(PYTHON) -m venv $(VENV)
@@ -40,3 +40,6 @@ init-db:
 
 migrate:
 	PYTHONPATH="$(CURDIR)" $(VENV_PYTHON) -m alembic upgrade head
+
+stress:
+	PYTHONPATH="$(CURDIR)" $(VENV_PYTHON) scripts/simulate_failure.py
