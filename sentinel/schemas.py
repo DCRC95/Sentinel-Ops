@@ -65,6 +65,12 @@ class CaseResponse(BaseModel):
     status: CaseStatusEnum
 
 
+class ContractorResponse(BaseModel):
+    contractor_id: UUID
+    handle: str
+    created_at: datetime
+
+
 class SubmitRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 

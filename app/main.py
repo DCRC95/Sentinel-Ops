@@ -19,6 +19,7 @@ from sentinel.hashing import canonical_json, submission_hash
 from sentinel.models import Case, Contractor, Submission, SubmissionEvent
 from sentinel.schemas import (
     CaseResponse,
+    ContractorResponse,
     CreateCaseRequest,
     ExportRecord,
     ManagerActionRequest,
@@ -230,6 +231,19 @@ def list_cases(db: Session = Depends(get_db_session)) -> list[CaseResponse]:
     ]
 
 
+@app.get("/contractors", response_model=list[ContractorResponse])
+def list_contractors(db: Session = Depends(get_db_session)) -> list[ContractorResponse]:
+    rows = db.scalars(select(Contractor).order_by(Contractor.created_at)).all()
+    return [
+        ContractorResponse(
+            contractor_id=UUID(row.contractor_id),
+            handle=row.handle,
+            created_at=row.created_at,
+        )
+        for row in rows
+    ]
+
+
 @app.post("/cases/{case_id}/submit", response_model=SubmitResponse)
 def submit_intelligence(
     case_id: UUID,
@@ -411,7 +425,7 @@ def export_case(
     approved_ids = [
         sid
         for sid, event_type in latest_event_types.items()
-        if event_type == EventType.APPROVED.value
+        if event_type in {EventType.APPROVED.value, EventType.EXPORTED.value}
     ]
     if len(approved_ids) == 0:
         records: list[ExportRecord] = []
