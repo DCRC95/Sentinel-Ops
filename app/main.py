@@ -3,7 +3,8 @@ from __future__ import annotations
 import csv
 import io
 import json
-from datetime import datetime
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -36,7 +37,14 @@ from sentinel.scoring import (
 )
 from sentinel.validation import validate_submission
 
-app = FastAPI(title="Sentinel-Ops API", version="0.2.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    yield
+
+
+app = FastAPI(title="Sentinel-Ops API", version="0.2.0", lifespan=lifespan)
 
 
 ACTION_TO_EVENT = {
@@ -45,11 +53,6 @@ ACTION_TO_EVENT = {
     "escalate": EventType.ESCALATED.value,
     "request_more_evidence": EventType.REQUEST_MORE_EVIDENCE.value,
 }
-
-
-@app.on_event("startup")
-def startup() -> None:
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
 def _create_event(
@@ -441,7 +444,7 @@ def export_case(
                 db,
                 submission_id=row.submission_id,
                 event_type=EventType.EXPORTED.value,
-                payload={"format": format, "exported_at": datetime.utcnow().isoformat()},
+                payload={"format": format, "exported_at": datetime.now(UTC).isoformat()},
                 actor="system",
             )
         db.commit()
@@ -472,6 +475,6 @@ def export_case(
         row["validation_summary"] = canonical_json(row["validation_summary"])
         writer.writerow(row)
 
-    now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    now = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
     headers = {"Content-Disposition": f"attachment; filename=sentinel_export_{now}.csv"}
     return Response(content=output.getvalue(), media_type="text/csv", headers=headers)
