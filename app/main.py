@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from sentinel.db import DB_PATH, get_db_session
 from sentinel.events import EventType
 from sentinel.hashing import canonical_json, submission_hash
+from sentinel.intelligence.evidence_analyzer import run_evidence_analysis
 from sentinel.models import Case, Contractor, Submission, SubmissionEvent
 from sentinel.schemas import (
     CaseResponse,
@@ -45,7 +46,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Sentinel-Ops API", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="Sentinel-Ops API", version="0.3.0", lifespan=lifespan)
 
 
 ACTION_TO_EVENT = {
@@ -313,6 +314,30 @@ def submit_intelligence(
         submission_id=submission.submission_id,
         event_type=EventType.VALIDATED.value,
         payload=validation_payload,
+        actor="system",
+    )
+
+    try:
+        evidence = run_evidence_analysis(
+            address=validation.normalized_address,
+            scam_type=payload.scam_type.value,
+            source_url=str(payload.source_url),
+        )
+        evidence_payload = evidence.to_payload()
+    except Exception as exc:  # defensive: ingestion should not fail if analysis fails
+        evidence_payload = {
+            "evidence_score": 0.0,
+            "address_found": False,
+            "classification_supported": False,
+            "source_reachable": False,
+            "notes": [f"Analyzer failed safely: {type(exc).__name__}"],
+        }
+
+    _create_event(
+        db,
+        submission_id=submission.submission_id,
+        event_type=EventType.EVIDENCE_ANALYZED.value,
+        payload=evidence_payload,
         actor="system",
     )
 

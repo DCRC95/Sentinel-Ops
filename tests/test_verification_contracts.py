@@ -104,7 +104,7 @@ def test_a_append_only_provenance_and_latest_status(client):
             select(SubmissionEvent).where(SubmissionEvent.submission_id == submission_id)
         ).all()
         initial_event_ids = [event.event_id for event in initial_events]
-        assert len(initial_events) == 2
+        assert len(initial_events) == 3
 
     approve = api.post(
         f"/submissions/{submission_id}/actions",
@@ -133,7 +133,7 @@ def test_a_append_only_provenance_and_latest_status(client):
             .order_by(SubmissionEvent.created_at)
         ).all()
 
-    assert len(all_events) == 4
+    assert len(all_events) == 5
     assert all(
         event_id in [event.event_id for event in all_events] for event_id in initial_event_ids
     )

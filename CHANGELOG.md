@@ -2,6 +2,15 @@
 
 All notable changes to Sentinel-Ops will be documented here.
 
+## [0.3.0] - 2026-02-23
+
+### Added
+- Intelligence Layer with deterministic Evidence Consistency Analyzer (ECA)
+- `EVIDENCE_ANALYZED` event in submission processing pipeline
+- Dashboard Evidence Analysis Card (score, support checks, analyzer notes)
+- Evidence determinism/safety test suite (`tests/test_evidence_analysis.py`)
+- Intelligence layer documentation (`docs/INTELLIGENCE_LAYER.md`)
+
 ## [0.2.0] - 2026-02-23
 
 ### Added

@@ -11,6 +11,7 @@ Instead, new events describe its evolution.
 
 - INGESTED
 - VALIDATED
+- EVIDENCE_ANALYZED
 - CONFLICTED
 - ENRICHED
 - APPROVED

@@ -63,6 +63,21 @@ def _leaderboard_frame(submissions: list[dict], contractors: list[dict]) -> pd.D
     return out.sort_values(["review_burden", "acceptance_rate"], ascending=[False, False])
 
 
+def _find_latest_evidence_event(events: list[dict]) -> dict | None:
+    evidence_events = [event for event in events if event["event_type"] == "EVIDENCE_ANALYZED"]
+    if not evidence_events:
+        return None
+    return evidence_events[-1]
+
+
+def _evidence_band(score: float) -> tuple[str, str]:
+    if score >= 0.7:
+        return "Green", "#2e7d32"
+    if score >= 0.4:
+        return "Yellow", "#f9a825"
+    return "Red", "#c62828"
+
+
 cases = _get_json("/cases")
 if not cases:
     st.info("No cases found. Create one using API first.")
@@ -128,6 +143,32 @@ else:
     )
     detail = _get_json(f"/submissions/{selected_submission_id}")
     tab_queue.json(detail["item"])
+    evidence_event = _find_latest_evidence_event(detail["events"])
+    if evidence_event:
+        payload = evidence_event["event_payload_json"]
+        score = float(payload.get("evidence_score", 0.0))
+        band, color = _evidence_band(score)
+        tab_queue.subheader("Evidence Analysis Card")
+        tab_queue.markdown(
+            (
+                "**Evidence Score:** "
+                f"<span style='color:{color}; font-weight:700'>{score:.2f} ({band})</span>"
+            ),
+            unsafe_allow_html=True,
+        )
+        e_col1, e_col2, e_col3 = tab_queue.columns(3)
+        e_col1.metric("Address Detected", "Yes" if payload.get("address_found") else "No")
+        e_col2.metric(
+            "Classification Supported",
+            "Yes" if payload.get("classification_supported") else "No",
+        )
+        e_col3.metric("Source Reachable", "Yes" if payload.get("source_reachable") else "No")
+        tab_queue.write("Analyzer Notes:")
+        for note in payload.get("notes", []):
+            tab_queue.write(f"- {note}")
+    else:
+        tab_queue.info("No evidence analysis available for this submission.")
+
     with tab_queue.expander("Event Audit Trail", expanded=False):
         tab_queue.json(detail["events"])
 

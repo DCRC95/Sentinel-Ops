@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sentinel-ops"
-version = "0.2.0"
+version = "0.3.0"
 description = "Interview-grade Intelligence Collection Operating System"
 requires-python = ">=3.11"
 dependencies = [

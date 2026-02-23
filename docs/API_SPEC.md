@@ -11,6 +11,11 @@ List contractors.
 
 ## POST /cases/{case_id}/submit
 Submit intelligence record.
+System appends events:
+- INGESTED
+- VALIDATED
+- EVIDENCE_ANALYZED
+- CONFLICTED (when applicable)
 
 ## GET /cases/{case_id}/submissions
 List submissions with derived state.

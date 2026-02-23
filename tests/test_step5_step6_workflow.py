@@ -103,7 +103,7 @@ def test_step5_list_submissions_derives_status_and_flags() -> None:
         first_row = by_id[first.json()["submission_id"]]
         second_row = by_id[second.json()["submission_id"]]
 
-        assert first_row["latest_event_type"] == "VALIDATED"
+        assert first_row["latest_event_type"] == "EVIDENCE_ANALYZED"
         assert second_row["latest_event_type"] == "CONFLICTED"
         assert first_row["is_duplicate"] is False
         assert second_row["is_duplicate"] is True

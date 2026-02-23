@@ -24,7 +24,7 @@ Outputs become investigation-ready datasets.
 
 ## Architectural Model
 
-Contractor → API → Validation → Event Ledger → Dashboard → Analyst Decision → Export
+Contractor → API → Validation → Evidence Analyzer → Event Ledger → Dashboard → Analyst Decision → Export
 
 ## Design Principles
 
