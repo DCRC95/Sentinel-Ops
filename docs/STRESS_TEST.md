@@ -1,6 +1,6 @@
 # Stress Test Report
 
-Generated: 2026-02-23T17:09:32.845692+00:00
+Generated: 2026-02-23T17:17:47.475087+00:00
 
 ## Scenarios
 
@@ -8,7 +8,7 @@ Generated: 2026-02-23T17:09:32.845692+00:00
 
 - Requests: 5000
 - Validation success rate: 1.0000
-- Average latency (ms): 21.26
+- Average latency (ms): 22.07
 
 ### 2) Conflict Storm
 
@@ -16,14 +16,14 @@ Generated: 2026-02-23T17:09:32.845692+00:00
 - Detected conflicts: 399
 - Expected conflicts: 399
 - Conflict detection accuracy: 1.0000
-- Average latency (ms): 41.55
+- Average latency (ms): 41.27
 
 ### 3) Invalid Payload Flood
 
 - Requests: 1000
 - Rejection stability: 1.0000
 - Crash resistance: stable
-- Average latency (ms): 0.53
+- Average latency (ms): 0.65
 
 ## Conclusions
 
