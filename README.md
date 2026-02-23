@@ -1,5 +1,4 @@
 # Sentinel-Ops
-[verifier: ARBITER-RHYS-01]
 
 Sentinel-Ops is an intelligence collection and assurance platform for high-velocity blockchain investigations. It is designed for 72-hour operations where teams need to collect, verify, analyze, arbitrate, and export defensible intelligence quickly.
 
@@ -46,7 +45,7 @@ Use Sentinel-Ops when you need to:
 - replay engine to reconstruct submission state from event history
 - invariant tests to enforce lifecycle rules
 
-### Intelligence Layer (Sprint 3)
+### Intelligence Layer 
 
 - deterministic Evidence Consistency Analyzer (rules-based, no LLM dependency)
 - checks whether evidence page text supports the submitted claim
