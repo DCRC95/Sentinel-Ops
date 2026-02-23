@@ -6,7 +6,7 @@ The Intelligence Layer adds deterministic, evidence-aware signal generation on t
 
 ## Rule Philosophy
 
-Sprint 3 uses deterministic rules before AI:
+ Deterministic rules before AI:
 
 - reproducible outputs
 - explainable scores
