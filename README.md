@@ -81,7 +81,7 @@ INGESTED
 
 All transitions are append-only and fully auditable.
 
-## Intelligence Layer (Sprint 3)
+## Intelligence Layer 
 
 Sentinel-Ops introduces a deterministic Evidence Consistency Analyzer:
 
