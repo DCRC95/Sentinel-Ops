@@ -22,7 +22,7 @@ dev-ui:
 	$(VENV_STREAMLIT) run dashboard/app.py
 
 seed:
-	PYTHONPATH="$(CURDIR)" $(VENV_PYTHON) scripts/seed_demo.py
+	PYTHONPATH="$(CURDIR)" $(VENV_PYTHON) scripts/seed_demo.py --reset
 
 test:
 	$(VENV_PYTEST) -q

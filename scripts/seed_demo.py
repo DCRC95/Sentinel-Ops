@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import argparse
 import random
 import uuid
 from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import delete
 
 from sentinel.db import DB_PATH, SessionLocal
 from sentinel.hashing import canonical_json, submission_hash
@@ -16,15 +19,37 @@ def random_eth_address() -> str:
     return "0x" + "".join(random.choice("0123456789abcdef") for _ in range(40))
 
 
-def main() -> None:
+def _reset_dataset(db) -> None:
+    db.execute(delete(SubmissionEvent))
+    db.execute(delete(Submission))
+    db.execute(delete(Contractor))
+    db.execute(delete(Case))
+    db.commit()
+
+
+def _has_expected_seed_shape(db) -> bool:
+    return (
+        db.query(Case).count() == 1
+        and db.query(Contractor).count() == 50
+        and db.query(Submission).count() == 2000
+    )
+
+
+def main(*, reset: bool = False) -> None:
     random.seed(42)
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     db = SessionLocal()
     try:
         if db.query(Case).count() > 0:
-            print("Seed skipped: existing data present")
-            return
+            if reset:
+                _reset_dataset(db)
+            elif _has_expected_seed_shape(db):
+                print("Seed skipped: expected demo dataset already present")
+                return
+            else:
+                print("Seed aborted: existing non-demo data present (run with --reset)")
+                return
 
         now = datetime.now(UTC)
         case = Case(
@@ -157,4 +182,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Seed deterministic Sentinel-Ops demo dataset")
+    parser.add_argument("--reset", action="store_true", help="clear existing data before seeding")
+    args = parser.parse_args()
+    main(reset=args.reset)
