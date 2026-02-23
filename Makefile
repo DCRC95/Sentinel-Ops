@@ -8,7 +8,7 @@ VENV_PYTEST := $(VENV)/bin/pytest
 VENV_RUFF := $(VENV)/bin/ruff
 VENV_BLACK := $(VENV)/bin/black
 
-.PHONY: install dev-api dev-ui seed test lint format init-db
+.PHONY: install dev-api dev-ui seed test lint format init-db migrate
 
 install:
 	$(PYTHON) -m venv $(VENV)
@@ -22,7 +22,7 @@ dev-ui:
 	$(VENV_STREAMLIT) run dashboard/app.py
 
 seed:
-	$(VENV_PYTHON) scripts/seed_demo.py
+	PYTHONPATH="$(CURDIR)" $(VENV_PYTHON) scripts/seed_demo.py
 
 test:
 	$(VENV_PYTEST) -q
@@ -36,4 +36,7 @@ format:
 	$(VENV_RUFF) check --fix .
 
 init-db:
-	$(VENV_PYTHON) scripts/init_db.py
+	PYTHONPATH="$(CURDIR)" $(VENV_PYTHON) -m alembic upgrade head
+
+migrate:
+	PYTHONPATH="$(CURDIR)" $(VENV_PYTHON) -m alembic upgrade head

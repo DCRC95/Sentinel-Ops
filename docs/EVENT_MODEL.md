@@ -18,6 +18,7 @@ Instead, new events describe its evolution.
 - ESCALATED
 - REQUEST_MORE_EVIDENCE
 - EXPORTED
+- AI_AUDITED
 
 ## State Derivation
 

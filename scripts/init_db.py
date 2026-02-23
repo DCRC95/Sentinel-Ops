@@ -1,8 +1,14 @@
-from sentinel.db import DB_PATH, engine
-from sentinel.models import Base
+from __future__ import annotations
 
+import os
+import subprocess
+import sys
+from pathlib import Path
 
 if __name__ == "__main__":
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    Base.metadata.create_all(bind=engine)
-    print(f"Initialized database at {DB_PATH}")
+    root = Path(__file__).resolve().parents[1]
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(root)
+    cmd = [sys.executable, "-m", "alembic", "upgrade", "head"]
+    subprocess.run(cmd, check=True, cwd=root, env=env)
+    print("Database migrated to head")

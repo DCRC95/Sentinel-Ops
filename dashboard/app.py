@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pandas as pd
 import requests
@@ -33,15 +33,32 @@ df = pd.DataFrame(submissions)
 
 col1, col2, col3, col4 = st.columns(4)
 deadline = datetime.fromisoformat(selected_case["deadline_time"])
-remaining = deadline - datetime.now(timezone.utc)
+remaining = deadline - datetime.now(UTC)
 col1.metric("Time Remaining", str(remaining).split(".")[0])
 col2.metric("Submissions", len(df))
-col3.metric("Pass Rate", f"{(100 * (df['latest_event_type'] != 'REJECTED').mean()):.1f}%" if not df.empty else "0%")
-col4.metric("Pending Review", int((df["latest_event_type"].isin(["CONFLICTED", "VALIDATED", "INGESTED"]).sum())) if not df.empty else 0)
+pass_rate = (
+    f"{(100 * (df['latest_event_type'] != 'REJECTED').mean()):.1f}%" if not df.empty else "0%"
+)
+pending_review = (
+    int(df["latest_event_type"].isin(["CONFLICTED", "VALIDATED", "INGESTED"]).sum())
+    if not df.empty
+    else 0
+)
+col3.metric("Pass Rate", pass_rate)
+col4.metric("Pending Review", pending_review)
 
 st.subheader("Review Queue")
 if df.empty:
     st.write("No submissions yet.")
 else:
     queue = df.sort_values(["is_conflicted", "confidence_score"], ascending=[False, False])
-    st.dataframe(queue[["submission_id", "chain", "address", "scam_type", "confidence_score", "latest_event_type", "triage_priority"]], use_container_width=True)
+    display_cols = [
+        "submission_id",
+        "chain",
+        "address",
+        "scam_type",
+        "confidence_score",
+        "latest_event_type",
+        "triage_priority",
+    ]
+    st.dataframe(queue[display_cols], use_container_width=True)

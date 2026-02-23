@@ -1,31 +1,31 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-from enum import Enum
+from datetime import UTC, datetime, timedelta
+from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
 
-class PriorityEnum(str, Enum):
+class PriorityEnum(StrEnum):
     LOW = "LOW"
     MED = "MED"
     HIGH = "HIGH"
 
 
-class CaseStatusEnum(str, Enum):
+class CaseStatusEnum(StrEnum):
     OPEN = "OPEN"
     CLOSED = "CLOSED"
 
 
-class ChainEnum(str, Enum):
+class ChainEnum(StrEnum):
     ETH = "ETH"
     BTC = "BTC"
     SOL = "SOL"
 
 
-class ScamTypeEnum(str, Enum):
+class ScamTypeEnum(StrEnum):
     PHISHING = "Phishing"
     PIG_BUTCHERING = "PigButchering"
     RUGPULL = "Rugpull"
@@ -33,7 +33,7 @@ class ScamTypeEnum(str, Enum):
     OTHER = "Other"
 
 
-class ManagerActionEnum(str, Enum):
+class ManagerActionEnum(StrEnum):
     APPROVE = "approve"
     REJECT = "reject"
     ESCALATE = "escalate"
@@ -52,7 +52,7 @@ class CreateCaseRequest(BaseModel):
         if value is None:
             return value
         if value.tzinfo is None:
-            return value.replace(tzinfo=timezone.utc)
+            return value.replace(tzinfo=UTC)
         return value
 
 
@@ -143,11 +143,14 @@ class ExportRecord(BaseModel):
     validation_summary: dict[str, Any]
 
 
-def derive_case_times(start_time: datetime | None, deadline_time: datetime | None) -> tuple[datetime, datetime]:
-    start = start_time or datetime.now(timezone.utc)
+def derive_case_times(
+    start_time: datetime | None,
+    deadline_time: datetime | None,
+) -> tuple[datetime, datetime]:
+    start = start_time or datetime.now(UTC)
     if start.tzinfo is None:
-        start = start.replace(tzinfo=timezone.utc)
+        start = start.replace(tzinfo=UTC)
     deadline = deadline_time or (start + timedelta(hours=72))
     if deadline.tzinfo is None:
-        deadline = deadline.replace(tzinfo=timezone.utc)
+        deadline = deadline.replace(tzinfo=UTC)
     return start, deadline

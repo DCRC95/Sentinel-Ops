@@ -12,9 +12,10 @@ from fastapi.responses import JSONResponse, Response
 from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
-from sentinel.db import DB_PATH, engine, get_db_session
+from sentinel.db import DB_PATH, get_db_session
+from sentinel.events import EventType
 from sentinel.hashing import canonical_json, submission_hash
-from sentinel.models import Base, Case, Contractor, Submission, SubmissionEvent
+from sentinel.models import Case, Contractor, Submission, SubmissionEvent
 from sentinel.schemas import (
     CaseResponse,
     CreateCaseRequest,
@@ -39,17 +40,16 @@ app = FastAPI(title="Sentinel-Ops API", version="0.2.0")
 
 
 ACTION_TO_EVENT = {
-    "approve": "APPROVED",
-    "reject": "REJECTED",
-    "escalate": "ESCALATED",
-    "request_more_evidence": "REQUEST_MORE_EVIDENCE",
+    "approve": EventType.APPROVED.value,
+    "reject": EventType.REJECTED.value,
+    "escalate": EventType.ESCALATED.value,
+    "request_more_evidence": EventType.REQUEST_MORE_EVIDENCE.value,
 }
 
 
 @app.on_event("startup")
 def startup() -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    Base.metadata.create_all(bind=engine)
 
 
 def _create_event(
@@ -186,7 +186,10 @@ def healthcheck() -> dict[str, str]:
 
 
 @app.post("/cases", response_model=CaseResponse)
-def create_case(payload: CreateCaseRequest, db: Session = Depends(get_db_session)) -> CaseResponse:
+def create_case(
+    payload: CreateCaseRequest,
+    db: Session = Depends(get_db_session),
+) -> CaseResponse:
     start, deadline = derive_case_times(payload.start_time, payload.deadline_time)
     case = Case(
         title=payload.title,
@@ -275,7 +278,7 @@ def submit_intelligence(
     _create_event(
         db,
         submission_id=submission.submission_id,
-        event_type="INGESTED",
+        event_type=EventType.INGESTED.value,
         payload={"submission_hash": submission.submission_hash},
         actor=str(payload.contractor_id),
     )
@@ -291,7 +294,7 @@ def submit_intelligence(
     _create_event(
         db,
         submission_id=submission.submission_id,
-        event_type="VALIDATED",
+        event_type=EventType.VALIDATED.value,
         payload=validation_payload,
         actor="system",
     )
@@ -300,7 +303,7 @@ def submit_intelligence(
         _create_event(
             db,
             submission_id=submission.submission_id,
-            event_type="CONFLICTED",
+            event_type=EventType.CONFLICTED.value,
             payload={"conflict_with": validation.conflict_with},
             actor="system",
         )
@@ -315,7 +318,10 @@ def submit_intelligence(
 
 
 @app.get("/cases/{case_id}/submissions", response_model=list[SubmissionListItem])
-def list_case_submissions(case_id: UUID, db: Session = Depends(get_db_session)) -> list[SubmissionListItem]:
+def list_case_submissions(
+    case_id: UUID,
+    db: Session = Depends(get_db_session),
+) -> list[SubmissionListItem]:
     case = db.get(Case, str(case_id))
     if case is None:
         raise HTTPException(status_code=404, detail="case_not_found")
@@ -329,7 +335,10 @@ def list_case_submissions(case_id: UUID, db: Session = Depends(get_db_session)) 
 
 
 @app.get("/submissions/{submission_id}", response_model=SubmissionDetail)
-def get_submission_detail(submission_id: UUID, db: Session = Depends(get_db_session)) -> SubmissionDetail:
+def get_submission_detail(
+    submission_id: UUID,
+    db: Session = Depends(get_db_session),
+) -> SubmissionDetail:
     submission = db.get(Submission, str(submission_id))
     if submission is None:
         raise HTTPException(status_code=404, detail="submission_not_found")
@@ -396,7 +405,11 @@ def export_case(
         raise HTTPException(status_code=404, detail="case_not_found")
 
     latest_event_types = _latest_event_type_map_for_case(db, str(case_id))
-    approved_ids = [sid for sid, event_type in latest_event_types.items() if event_type == "APPROVED"]
+    approved_ids = [
+        sid
+        for sid, event_type in latest_event_types.items()
+        if event_type == EventType.APPROVED.value
+    ]
     if len(approved_ids) == 0:
         records: list[ExportRecord] = []
     else:
@@ -424,6 +437,14 @@ def export_case(
                     validation_summary=validation_summary,
                 )
             )
+            _create_event(
+                db,
+                submission_id=row.submission_id,
+                event_type=EventType.EXPORTED.value,
+                payload={"format": format, "exported_at": datetime.utcnow().isoformat()},
+                actor="system",
+            )
+        db.commit()
 
     if format == "json":
         return JSONResponse([record.model_dump(mode="json") for record in records])
