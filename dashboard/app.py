@@ -20,6 +20,13 @@ def _get_json(path: str):
     return response.json()
 
 
+def _parse_api_datetime(value: str) -> datetime:
+    parsed = datetime.fromisoformat(value)
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
+
+
 def _post_json(path: str, payload: dict):
     response = requests.post(f"{API_BASE}{path}", json=payload, timeout=10)
     response.raise_for_status()
@@ -74,15 +81,14 @@ tab_overview, tab_queue, tab_leaderboard = st.tabs(
 )
 
 col1, col2, col3, col4 = tab_overview.columns(4)
-deadline = datetime.fromisoformat(selected_case["deadline_time"])
+deadline = _parse_api_datetime(selected_case["deadline_time"])
 remaining = deadline - datetime.now(UTC)
 col1.metric("Time Remaining", str(remaining).split(".")[0])
 col2.metric("Submissions", len(df))
 
 elapsed_hours = max(
     1.0,
-    (datetime.now(UTC) - datetime.fromisoformat(selected_case["start_time"])).total_seconds()
-    / 3600,
+    (datetime.now(UTC) - _parse_api_datetime(selected_case["start_time"])).total_seconds() / 3600,
 )
 throughput = len(df) / elapsed_hours
 pass_rate = (

@@ -391,6 +391,18 @@ def submission_action(
     if submission is None:
         raise HTTPException(status_code=404, detail="submission_not_found")
 
+    if payload.action.value == "approve":
+        has_validated_event = db.scalar(
+            select(func.count())
+            .select_from(SubmissionEvent)
+            .where(
+                SubmissionEvent.submission_id == str(submission_id),
+                SubmissionEvent.event_type == EventType.VALIDATED.value,
+            )
+        )
+        if not has_validated_event:
+            raise HTTPException(status_code=409, detail="submission_not_validated")
+
     event_type = ACTION_TO_EVENT[payload.action.value]
     event = _create_event(
         db,
