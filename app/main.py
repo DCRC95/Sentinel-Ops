@@ -95,6 +95,21 @@ def _latest_validated_payload(db: Session, submission_id: str) -> dict[str, Any]
     return json.loads(event.event_payload_json)
 
 
+def _latest_event_type_map_for_case(db: Session, case_id: str) -> dict[str, str]:
+    latest_events = db.execute(
+        select(SubmissionEvent.submission_id, SubmissionEvent.event_type)
+        .join(Submission, Submission.submission_id == SubmissionEvent.submission_id)
+        .where(Submission.case_id == case_id)
+        .order_by(SubmissionEvent.submission_id, desc(SubmissionEvent.created_at))
+    ).all()
+
+    latest_by_submission: dict[str, str] = {}
+    for submission_id, event_type in latest_events:
+        if submission_id not in latest_by_submission:
+            latest_by_submission[submission_id] = event_type
+    return latest_by_submission
+
+
 def _submission_with_scores(db: Session, submission: Submission) -> SubmissionListItem:
     total_for_address = db.scalar(
         select(func.count())
@@ -380,10 +395,9 @@ def export_case(
     if case is None:
         raise HTTPException(status_code=404, detail="case_not_found")
 
-    approved_ids = db.scalars(
-        select(SubmissionEvent.submission_id).where(SubmissionEvent.event_type == "APPROVED")
-    ).all()
-    if not approved_ids:
+    latest_event_types = _latest_event_type_map_for_case(db, str(case_id))
+    approved_ids = [sid for sid, event_type in latest_event_types.items() if event_type == "APPROVED"]
+    if len(approved_ids) == 0:
         records: list[ExportRecord] = []
     else:
         approved_rows = db.scalars(

@@ -66,7 +66,7 @@ class CaseResponse(BaseModel):
 
 
 class SubmitRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     contractor_id: UUID
     chain: ChainEnum = Field(alias="blockchain")
