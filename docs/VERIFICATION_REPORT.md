@@ -25,7 +25,7 @@ Step coverage suites added later:
 
 2. `make test`
 - **Result:** PASS
-- **Evidence:** `15 passed`.
+- **Evidence:** `21 passed`.
 
 3. `make init-db`
 - **Result:** PASS
@@ -64,10 +64,53 @@ Step coverage suites added later:
 3. Offline install reproducibility risk: `make install` can still depend on networked package index availability.
 
 ## Recommendations (Non-blocking)
-1. Add `/Users/rhys/Desktop/Sentinal Ops/docs/DEMO.md` to fully match required docs list.
-2. Add CI gates for `make lint` and `make test` on each PR.
-3. Add regression test asserting re-export remains eligible after `EXPORTED` latest-state transitions.
-4. Consider centralizing event-type usage in additional modules to prevent drift.
+1. Add CI gates for `make lint`, `make test`, and `make stress` on each PR.
+2. Add a deterministic threshold policy for stress regression alerts (latency/error baselines).
+3. Add replay checksum assertions over full event streams to tighten parity guarantees.
+4. Consider database-level append-only protections (trigger-based) for `submission_events`.
+
+## Sprint 2 Assurance Verification
+
+### Invariant Results
+
+Invariant suite:
+- `/Users/rhys/Desktop/Sentinal Ops/tests/test_invariants.py`
+
+Verified outcomes:
+- Validation gate enforced: approval without `VALIDATED` returns `409`.
+- Export approval rule enforced: non-approved submissions are excluded from export.
+- Single latest state derivation confirmed from chronological events.
+- Event immutability verified (pre-existing events unchanged after later actions).
+- Conflict reference integrity verified (all referenced IDs resolve to real submissions).
+
+### Replay Validation Results
+
+Replay artifacts:
+- `/Users/rhys/Desktop/Sentinal Ops/sentinel/replay.py`
+- `/Users/rhys/Desktop/Sentinal Ops/tests/test_event_replay.py`
+
+Verified outcomes:
+- Replay reconstruction from ordered events matches API-derived submission state.
+- Lifecycle path `VALIDATED -> APPROVED -> EXPORTED` is reconstructible from events alone.
+- Replay model preserves conflict/duplicate reference context.
+
+### Stress Outcomes
+
+Stress artifacts:
+- `/Users/rhys/Desktop/Sentinal Ops/scripts/simulate_failure.py`
+- `/Users/rhys/Desktop/Sentinal Ops/docs/STRESS_TEST.md`
+
+Latest observed metrics:
+- Submission Burst (5000): success rate `1.0000`, avg latency `~21.26ms`.
+- Conflict Storm (400): detection accuracy `1.0000`, avg latency `~41.55ms`.
+- Invalid Payload Flood (1000): rejection stability `1.0000`, crash resistance `stable`.
+
+### Risk Assessment (Sprint 2)
+
+1. **State-ordering tie risk (Medium):** equal timestamps could ambiguate ordering; replay currently sorts by timestamp only.
+2. **Scale boundary risk (Medium):** stress validation is strong but local-only; no multi-process or networked DB contention tested.
+3. **Install reproducibility risk (Medium):** dependency installation still assumes index availability.
+4. **DB immutability enforcement risk (Low/Medium):** append-only is application-enforced; DB triggers are not yet in place.
 
 ## Notes
 This report supersedes earlier “NOT MERGEABLE / partial fail” status from pre-fix snapshots.
