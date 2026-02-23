@@ -1,5 +1,4 @@
 # Sentinel-Ops
-[verifier: ARBITER-RHYS-01]
 
 Sentinel-Ops is an intelligence collection and assurance platform designed for high-velocity blockchain investigations.
 
