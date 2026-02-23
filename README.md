@@ -1,168 +1,136 @@
 # Sentinel-Ops
+[verifier: ARBITER-RHYS-01]
 
-Sentinel-Ops is an intelligence collection and assurance platform for high-velocity blockchain investigations. It is designed for 72-hour operations where teams need to collect, verify, analyze, arbitrate, and export defensible intelligence quickly.
+Sentinel-Ops is an intelligence collection and assurance platform designed for high-velocity blockchain investigations.
 
-## Why You Would Use It
+It models how intelligence teams operate during **72-hour investigative cycles**, enabling teams to collect, verify, analyze, arbitrate, and export defensible intelligence while preserving full analytical provenance.
 
-Use Sentinel-Ops when you need to:
+---
 
-- coordinate many contractors submitting chain intelligence
-- enforce deterministic validation and reproducible hashing
-- preserve append-only chain-of-custody event history
-- detect duplicate and conflicting claims early
-- triage review workload with explainable scoring
-- evaluate whether linked evidence supports claims
-- keep a human manager in control of final decisions
-- export approved records with provenance for downstream investigation
+## Who This Is For
 
-## What It Can Do (Current)
+Sentinel-Ops is designed for:
 
-### Case and Submission Operations
+- intelligence operations teams coordinating distributed researchers
+- blockchain investigation workflows requiring auditability
+- environments where evidence must remain reproducible and defensible
+- analysts who must triage large volumes of submissions under time pressure
 
-- create and list investigation cases
-- list registered contractors
-- ingest contractor submissions with strict schema checks
-- normalize and validate chain/address/source fields
-- detect duplicates and classification conflicts within a case
-- compute submission hash from canonical JSON
+The system does **not automate decisions** - it structures evidence so humans can make better ones.
 
-### Assurance and Event Integrity
+---
 
-- append-only event lifecycle (no in-place status mutation)
-- event types include:
-  - `INGESTED`
-  - `VALIDATED`
-  - `EVIDENCE_ANALYZED`
-  - `CONFLICTED`
-  - `APPROVED`
-  - `REJECTED`
-  - `ESCALATED`
-  - `REQUEST_MORE_EVIDENCE`
-  - `EXPORTED`
-  - `ENRICHED`
-  - `AI_AUDITED`
-- manager approval guard: cannot approve a submission that lacks `VALIDATED`
-- replay engine to reconstruct submission state from event history
-- invariant tests to enforce lifecycle rules
+## Quickstart (2 Minutes)
 
-### Intelligence Layer 
+```bash
+make install
+make init-db
+make seed
+make dev-api
+make dev-ui
+```
 
-- deterministic Evidence Consistency Analyzer (rules-based, no LLM dependency)
-- checks whether evidence page text supports the submitted claim
-- computes evidence score (0.0–1.0) from:
-  - address mention
-  - classification keyword support
-  - source reachability
-- appends `EVIDENCE_ANALYZED` event payload without breaking ingestion on analyzer failure
+Open:
 
-### Analyst / Manager Workflow
+- API: http://localhost:8000
+- Dashboard: http://localhost:8501
 
-- Streamlit command center with:
-  - Case Overview (deadline, throughput, pass rate, pending review)
-  - Review Queue (conflicts-first + triage ordering)
-  - Submission detail and full event audit trail
-  - Evidence Analysis Card (score banding, support checks, notes)
-  - manager actions (`approve`, `reject`, `escalate`, `request_more_evidence`)
-  - Contractor Leaderboard (acceptance rate, conflict rate, review burden)
-  - export panel (JSON/CSV)
+A deterministic demo dataset is automatically created.
 
-### Export and Reporting
+---
 
-- export approved submissions as JSON or CSV
-- re-export supported after `EXPORTED` latest-state transitions
-- each exported record includes provenance fields and validation summary
+## Operational Problem
 
-### Stress and Verification Tooling
+During fast investigations, teams struggle with:
 
-- deterministic seed dataset generation with reset mode
-- stress simulation scenarios:
-  - submission burst
-  - conflict storm
-  - invalid payload flood
-- generated stress report in `docs/STRESS_TEST.md`
-- comprehensive test suite for contracts, step coverage, invariants, replay, and evidence analysis
+- inconsistent contractor submissions
+- manual spreadsheet validation
+- unclear evidence quality
+- loss of analytical provenance
+- delayed decision cycles
 
-## Architecture Diagram
+Sentinel-Ops replaces ad-hoc coordination with a deterministic intelligence workflow.
+
+---
+
+## Architecture
 
 ```mermaid
 flowchart LR
     C["Contractors"] --> API["FastAPI API"]
-    API --> V["Validation Engine\n(schema, normalization, dedupe/conflict)"]
-    V --> ECA["Evidence Consistency Analyzer\n(rules-based)"]
-    ECA --> EV["Append-only Event Ledger\n(submission_events)"]
-    EV --> DER["Derived State + Scoring\n(latest status, triage, reliability)"]
+    API --> V["Validation Engine"]
+    V --> ECA["Evidence Consistency Analyzer"]
+    ECA --> EV["Append-only Event Ledger"]
+    EV --> DER["Derived State + Scoring"]
     DER --> UI["Streamlit Command Center"]
-    UI --> M["Manager Decisions\n(approve/reject/escalate/request_more_evidence)"]
+    UI --> M["Manager Decisions"]
     M --> EV
-    EV --> REPLAY["Replay Engine\n(reconstruct state from events)"]
-    EV --> EXP["Approved Export\n(JSON/CSV + provenance)"]
-    EV --> VERIFY["Invariant & Assurance Tests"]
-    EV --> STRESS["Stress Simulation"]
+    EV --> REPLAY["Replay Engine"]
+    EV --> EXP["Approved Export"]
 ```
 
-## Event Lifecycle (Typical)
+## Intelligence Lifecycle
 
 ```text
 INGESTED
  -> VALIDATED
  -> EVIDENCE_ANALYZED
  -> CONFLICTED (optional)
- -> APPROVED / REJECTED / ESCALATED / REQUEST_MORE_EVIDENCE
- -> EXPORTED (for approved records)
+ -> APPROVED / REJECTED / ESCALATED
+ -> EXPORTED
 ```
+
+All transitions are append-only and fully auditable.
+
+## Intelligence Layer (Sprint 3)
+
+Sentinel-Ops introduces a deterministic Evidence Consistency Analyzer:
+
+- evaluates whether evidence supports submitted claims
+- rules-based (no opaque AI decisions)
+- computes explainable evidence scores
+- preserves human-in-the-loop decision authority
+
+Confidence represents analytical certainty, not prediction.
+
+See: `docs/INTELLIGENCE_LAYER.md`
+
+## Key Capabilities
+
+### Assurance
+
+- append-only event sourcing
+- deterministic hashing
+- invariant lifecycle enforcement
+- replayable state reconstruction
+
+### Analyst Workflow
+
+- conflicts-first review queue
+- evidence analysis panel
+- full audit trail visibility
+- contractor reliability tracking
+
+### Export
+
+- JSON/CSV export
+- provenance attached to every record
 
 ## API Endpoints
 
 - `GET /health`
 - `POST /cases`
 - `GET /cases`
-- `GET /contractors`
 - `POST /cases/{case_id}/submit`
-- `GET /cases/{case_id}/submissions`
-- `GET /submissions/{id}`
 - `POST /submissions/{id}/actions`
-- `GET /cases/{case_id}/export?format=json|csv`
-
-## Local Commands
-
-```bash
-make install      # create venv + install package/dev deps
-make init-db      # alembic upgrade head
-make migrate      # alias for alembic upgrade head
-make seed         # deterministic demo seed (uses --reset)
-make dev-api      # run FastAPI
-make dev-ui       # run Streamlit dashboard
-make stress       # run stress simulation + write docs/STRESS_TEST.md
-make lint         # ruff + black --check
-make test         # pytest
-make format       # black + ruff --fix
-```
-
-## Demo Data Shape
-
-`make seed` produces a deterministic, ready-to-demo dataset:
-
-- 1 case
-- 50 contractors
-- 2000 submissions
-- guaranteed duplicates and conflicts for meaningful review flow
+- `GET /cases/{case_id}/export`
 
 ## Repository Layout
 
-- `/Users/rhys/Desktop/Sentinal Ops/app` — FastAPI entrypoint and routes
-- `/Users/rhys/Desktop/Sentinal Ops/sentinel` — core domain logic (schemas, events, validation, replay, intelligence)
-- `/Users/rhys/Desktop/Sentinal Ops/sentinel/intelligence` — evidence analyzer module
-- `/Users/rhys/Desktop/Sentinal Ops/dashboard` — Streamlit command center
-- `/Users/rhys/Desktop/Sentinal Ops/migrations` — Alembic migrations
-- `/Users/rhys/Desktop/Sentinal Ops/scripts` — operational scripts (seed, stress, init)
-- `/Users/rhys/Desktop/Sentinal Ops/tests` — automated verification suites
-- `/Users/rhys/Desktop/Sentinal Ops/docs` — operating, architecture, assurance, ADR, and verification docs
-
-## Current Maturity Snapshot
-
-- deterministic validation and hashing in place
-- event-sourced lifecycle with replay support
-- rules-based intelligence scoring in place
-- stress and invariant verification in place
-- human-in-the-loop decisioning preserved
-- prepared to layer advanced AI later on verified analytical inputs
+- `app/` FastAPI service
+- `sentinel/` core intelligence + assurance logic
+- `dashboard/` Streamlit command center
+- `migrations/` Alembic migrations
+- `scripts/` seed + stress tooling
+- `tests/` verification suites
+- `docs/` architecture and intelligence documentation
