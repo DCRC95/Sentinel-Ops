@@ -1,7 +1,7 @@
 # Architectural Decisions
 
 ## SQLite First
-Chosen for portability and interview demonstration simplicity.
+Chosen for portability and prototype simplicity.
 
 ## Streamlit Dashboard
 Optimized for rapid operational tooling rather than production UI.
